@@ -1,0 +1,35 @@
+# ============ Secrets — never commit the real config files ============
+# The .example versions ARE committed (placeholders only); the real ones
+# with actual passwords/keys stay local to each machine.
+spring_boot_backend_template/spring_boot_backend_template/src/main/resources/application.properties
+AdElevate-Payment-Service/AdElevate-Payment-Service/src/main/resources/application.properties
+**/appsettings.Local.json
+.env
+.env.local
+
+# ============ Java / Maven (Core + Payment services) ============
+target/
+*.class
+
+# ============ .NET (Logging service) ============
+AdElevate-Logging-Service/bin/
+AdElevate-Logging-Service/obj/
+AdElevate-Logging-Service/Logs/*.txt
+
+# ============ Frontend (React / Vite) ============
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-error.log*
+
+# ============ IDE / OS clutter ============
+.idea/
+.vscode/
+*.iml
+.metadata/
+.DS_Store
+Thumbs.db
+
+# Visual Studio (AdElevate-Logging-Service)
+.vs/

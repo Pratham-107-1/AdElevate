@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap');
+@import 'tailwindcss';
+
+/* Design tokens ported from the Figma reference (Business Service
+   Marketplace Design) so Tailwind utility classes like bg-navy,
+   text-coral, etc. match the design exactly. */
+@theme {
+  --color-navy: #0D1B2A;
+  --color-sapphire: #1B4965;
+  --color-coral: #FF6F61;
+  --color-misty: #F8F9FA;
+  --color-charcoal: #2E2E2E;
+  --color-brand-green: #2ECC71;
+  --color-brand-red: #C62828;
+
+  --color-platinum: #7c3aed;
+  --color-platinum-bg: #f5f3ff;
+  --color-platinum-border: #c4b5fd;
+  --color-gold: #b45309;
+  --color-gold-bg: #fffbeb;
+  --color-gold-border: #fcd34d;
+  --color-silver: #475569;
+  --color-silver-bg: #f1f5f9;
+  --color-silver-border: #cbd5e1;
+
+  --font-heading: 'Outfit', sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #F8F9FA;
+  color: #2E2E2E;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 4px;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #FF6F61 !important;
+  box-shadow: 0 0 0 3px rgba(255,111,97,0.12);
+  outline: none;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+/* Tailwind's Preflight resets <button> to cursor: default (unlike native
+   browser behavior). Restore the hand cursor globally instead of adding
+   cursor-pointer to every single button across the app. */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+select {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
