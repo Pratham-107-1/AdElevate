@@ -16,10 +16,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// CORS is handled globally by WebConfig (reads frontend.origin from config)
+// — a hardcoded @CrossOrigin here would silently stay pinned to localhost
+// forever regardless of that setting, so it's intentionally not repeated.
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class PaymentController {
 
     private final PaymentService paymentService;

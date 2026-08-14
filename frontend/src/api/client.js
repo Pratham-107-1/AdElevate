@@ -3,8 +3,12 @@ import axios from "axios";
 // Two separate backend services, same as we've been calling directly with
 // fetch() throughout development — Core handles auth/ads/users/etc.,
 // Payment handles Razorpay order creation + verification.
-export const CORE_BASE_URL = "http://localhost:9090";
-export const PAYMENT_BASE_URL = "http://localhost:8081";
+// Read from Vite env vars so a production build can point at deployed
+// backend URLs instead of localhost — set VITE_CORE_BASE_URL /
+// VITE_PAYMENT_BASE_URL in a .env.production file or your host's env
+// var settings. Falls back to localhost for local dev with no setup.
+export const CORE_BASE_URL = import.meta.env.VITE_CORE_BASE_URL || "http://localhost:9090";
+export const PAYMENT_BASE_URL = import.meta.env.VITE_PAYMENT_BASE_URL || "http://localhost:8081";
 
 export const coreApi = axios.create({ baseURL: CORE_BASE_URL });
 export const paymentApi = axios.create({ baseURL: PAYMENT_BASE_URL });

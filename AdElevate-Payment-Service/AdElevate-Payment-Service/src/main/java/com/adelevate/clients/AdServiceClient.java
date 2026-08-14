@@ -11,8 +11,11 @@ public class AdServiceClient {
 
     private final RestTemplate restTemplate;
 
+    @org.springframework.beans.factory.annotation.Value("${core.service.url}")
+    private String coreServiceUrl;
+
     public void updateAdStatus(Long adId, String status) {
-        String url = "http://localhost:9090/api/ads/" + adId + "/status?status=" + status;
+        String url = coreServiceUrl + "/api/ads/" + adId + "/status?status=" + status;
         restTemplate.put(url, null);
     }
 }

@@ -19,10 +19,12 @@ import lombok.RequiredArgsConstructor;
 public class LoggingServiceClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoggingServiceClient.class);
-    private static final String LOGGING_SERVICE_URL = "http://localhost:5085/api/logs";
     private static final String SOURCE = "payment-service";
 
     private final RestTemplate restTemplate;
+
+    @org.springframework.beans.factory.annotation.Value("${logging.service.url}")
+    private String loggingServiceUrl;
 
     public void logEvent(String eventType, String message, Long userId, String email) {
         Map<String, Object> body = new HashMap<>();
@@ -33,7 +35,7 @@ public class LoggingServiceClient {
         body.put("source", SOURCE);
 
         try {
-            restTemplate.postForObject(LOGGING_SERVICE_URL, body, String.class);
+            restTemplate.postForObject(loggingServiceUrl + "/api/logs", body, String.class);
         } catch (Exception e) {
             LOG.warn("Could not reach logging service for event {}: {}", eventType, e.getMessage());
         }

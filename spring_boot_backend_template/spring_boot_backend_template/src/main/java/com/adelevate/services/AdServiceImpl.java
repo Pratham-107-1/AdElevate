@@ -29,6 +29,9 @@ public class AdServiceImpl implements AdService {
     private final RatingRepository ratingRepository;
     private final RestTemplate restTemplate; // ✅ For cross-service sync
 
+    @org.springframework.beans.factory.annotation.Value("${payment.service.url}")
+    private String paymentServiceUrl;
+
     @Override
     public AdResponseDto createAd(AdRequestDto dto) {
         BusinessVendor vendor = vendorRepository.findById(dto.getVendorId())
@@ -76,7 +79,7 @@ public class AdServiceImpl implements AdService {
         syncDto.setStatus(ad.getStatus().name());
 
         try {
-            restTemplate.postForObject("http://localhost:8081/api/payments/syncAd", syncDto, String.class);
+            restTemplate.postForObject(paymentServiceUrl + "/api/payments/syncAd", syncDto, String.class);
         } catch (Exception e) {
             throw new RuntimeException("Failed to sync Ad with Payment microservice: " + e.getMessage());
         }
