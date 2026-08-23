@@ -27,7 +27,7 @@ public class PaymentClient {
     public PaymentResponseDto getPaymentByAd(Long adId) {
         return webClientBuilder.build()
                 .get()
-                .uri("http://localhost:9191/api/payments/ad/" + adId)
+                .uri("http://localhost:8081/api/payments/ad/" + adId)
                 .retrieve()
                 .bodyToMono(PaymentResponseDto.class)
                 .block();
