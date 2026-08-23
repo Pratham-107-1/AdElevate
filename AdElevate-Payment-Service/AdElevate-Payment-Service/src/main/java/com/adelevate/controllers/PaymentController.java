@@ -15,18 +15,26 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
-// CORS is handled globally by WebConfig (reads frontend.origin from config)
-// — a hardcoded @CrossOrigin here would silently stay pinned to localhost
-// forever regardless of that setting, so it's intentionally not repeated.
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
 public class PaymentController {
 
     private final PaymentService paymentService;
 //    private final AdService adService; // ✅ inject AdService here
     private final AdServiceClient adServiceClient;
+    private final String razorpayKey; // ✅ key_id only, from RazorpayConfig — never the secret
+
+    // ✅ Single source of truth for the Razorpay key_id. The frontend fetches
+    // this instead of hardcoding its own copy, so it's physically impossible
+    // for the frontend and backend keys to drift out of sync again.
+    @GetMapping("/config")
+    public ResponseEntity<Map<String, String>> getPaymentConfig() {
+        return ResponseEntity.ok(Map.of("key", razorpayKey));
+    }
 
 //    @PostMapping("/order")
     @PostMapping

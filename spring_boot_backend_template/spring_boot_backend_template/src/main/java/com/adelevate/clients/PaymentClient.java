@@ -14,13 +14,10 @@ public class PaymentClient {
 
     private final WebClient.Builder webClientBuilder;
 
-    @org.springframework.beans.factory.annotation.Value("${payment.service.url}")
-    private String paymentServiceUrl;
-
     public PaymentResponseDto initiatePayment(PaymentRequestDto dto) {
         return webClientBuilder.build()
                 .post()
-                .uri(paymentServiceUrl + "/api/payments")
+                .uri("http://localhost:8081/api/payments") // ✅ Payment microservice ka URL
                 .bodyValue(dto)
                 .retrieve()
                 .bodyToMono(PaymentResponseDto.class)
@@ -28,13 +25,9 @@ public class PaymentClient {
     }
 
     public PaymentResponseDto getPaymentByAd(Long adId) {
-        // NOTE: this previously pointed at port 9191, which nothing in this
-        // project runs on — the Payment service is on 8081. Fixed as part of
-        // parameterizing it; this method is currently unused (dead code) so
-        // the bug never surfaced, but it's fixed now in case it gets wired up.
         return webClientBuilder.build()
                 .get()
-                .uri(paymentServiceUrl + "/api/payments/ad/" + adId)
+                .uri("http://localhost:9191/api/payments/ad/" + adId)
                 .retrieve()
                 .bodyToMono(PaymentResponseDto.class)
                 .block();

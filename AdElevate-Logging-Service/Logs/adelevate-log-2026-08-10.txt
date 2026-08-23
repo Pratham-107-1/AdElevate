@@ -1,0 +1,8 @@
+﻿[2026-08-10 17:33:36] [LOGIN] (core-service) userId=2 email=admin@gmail.com | admin (ADMIN) logged in
+[2026-08-10 17:41:47] [LOGIN] (core-service) userId=2 email=admin@gmail.com | admin (ADMIN) logged in
+[2026-08-10 17:43:00] [LOGIN] (core-service) userId=2 email=admin@gmail.com | admin (ADMIN) logged in
+[2026-08-10 17:43:33] [LOGIN] (core-service) userId=3 email=sham@gmail.com | sham (CUSTOMER) logged in
+[2026-08-10 17:46:18] [LOGIN] (core-service) userId=2 email=admin@gmail.com | admin (ADMIN) logged in
+[2026-08-10 17:49:49] [LOGIN] (core-service) userId=2 email=admin@gmail.com | admin (ADMIN) logged in
+[2026-08-10 17:49:56] [LOGIN] (core-service) userId=4 email=rajesh@gmail.com | Rajesh (VENDOR) logged in
+[2026-08-10 17:52:15] [PAYMENT_SUCCESS] (payment-service) userId=4 | Payment of ₹4999.0 succeeded for ad 20 (orderId order_TO45scfqaLZgwT)

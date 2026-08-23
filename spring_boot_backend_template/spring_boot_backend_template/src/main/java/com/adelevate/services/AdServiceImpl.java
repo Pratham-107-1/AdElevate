@@ -12,7 +12,7 @@ import com.adelevate.repositories.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,10 +27,7 @@ public class AdServiceImpl implements AdService {
     private final SubscriptionPlanRepository planRepository;
     private final LocationRepository locationRepository;
     private final RatingRepository ratingRepository;
-    private final RestTemplate restTemplate; // ✅ For cross-service sync
-
-    @org.springframework.beans.factory.annotation.Value("${payment.service.url}")
-    private String paymentServiceUrl;
+    private final RestClient restClient; // ✅ For cross-service sync (needs the call to block + throw on failure)
 
     @Override
     public AdResponseDto createAd(AdRequestDto dto) {
@@ -79,7 +76,11 @@ public class AdServiceImpl implements AdService {
         syncDto.setStatus(ad.getStatus().name());
 
         try {
-            restTemplate.postForObject(paymentServiceUrl + "/api/payments/syncAd", syncDto, String.class);
+            restClient.post()
+                    .uri("http://localhost:8081/api/payments/syncAd")
+                    .body(syncDto)
+                    .retrieve()
+                    .toEntity(String.class);
         } catch (Exception e) {
             throw new RuntimeException("Failed to sync Ad with Payment microservice: " + e.getMessage());
         }
@@ -111,9 +112,31 @@ public class AdServiceImpl implements AdService {
         ad.setDescription(dto.getDescription());
         ad.setProductImage(dto.getProductImage());
         ad.setCategory(AdCategory.valueOf(dto.getCategory()));
-        ad.setExpirationDate(dto.getExpirationDate());
         ad.setMinPrice(dto.getMinPrice());
         ad.setMaxPrice(dto.getMaxPrice());
+
+        // ✅ FIX: expirationDate is never sent back to the frontend in
+        // AdResponseDto, so an edit form has no way to round-trip it. Only
+        // overwrite it if the caller actually provided one — otherwise a
+        // routine "edit title/description" save would silently null out
+        // the ad's expiration date.
+        if (dto.getExpirationDate() != null) {
+            ad.setExpirationDate(dto.getExpirationDate());
+        }
+
+        // ✅ FIX: city was accepted in AdRequestDto but silently ignored here
+        // (unlike createAd, which resolves it to a Location). An edit form
+        // that let a vendor change the city would have looked like it saved
+        // but done nothing. Same find-or-create pattern as createAd().
+        if (dto.getCity() != null && !dto.getCity().isBlank()) {
+            Location location = locationRepository.findByCityIgnoreCase(dto.getCity().trim())
+                    .orElseGet(() -> {
+                        Location newLocation = new Location();
+                        newLocation.setCity(dto.getCity().trim());
+                        return locationRepository.save(newLocation);
+                    });
+            ad.setLocation(location);
+        }
 
         adRepository.save(ad);
         return toDto(ad);
@@ -199,6 +222,8 @@ public class AdServiceImpl implements AdService {
         dto.setAverageRating(adRepository.findAverageRatingByAdId(ad.getAdId()));
         dto.setTotalReviews(adRepository.countRatingsByAdId(ad.getAdId()));
         dto.setPriceRange("₹" + ad.getMinPrice() + "–₹" + ad.getMaxPrice());
+        dto.setMinPrice(ad.getMinPrice());
+        dto.setMaxPrice(ad.getMaxPrice());
         dto.setStatus(ad.getStatus().name());
         return dto;
     }

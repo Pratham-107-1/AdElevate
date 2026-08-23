@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { coreApi, paymentApi } from "../api/client";
 
-const RAZORPAY_KEY = "rzp_test_TICbc9mn32FEtQ"; // sandbox key, reused from earlier RazorpayCheckout.jsx
-
 export default function PaymentPage() {
   const [searchParams] = useSearchParams();
   const adId = searchParams.get("adId");
@@ -11,6 +9,11 @@ export default function PaymentPage() {
 
   const [payment, setPayment] = useState(null); // { amount, status, planId... } from the already-synced row
   const [ad, setAd] = useState(null);
+  // ✅ FIX: fetched from the backend (GET /api/payments/config) instead of
+  // being a hardcoded copy here. The backend's razorpay.key is the only
+  // source of truth, so the key used to open Checkout can never drift out
+  // of sync with the key the backend used to create the order.
+  const [razorpayKey, setRazorpayKey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [paying, setPaying] = useState(false);
@@ -20,10 +23,12 @@ export default function PaymentPage() {
     Promise.all([
       paymentApi.get(`/api/payments/ad/${adId}`),
       coreApi.get(`/api/ads/${adId}`),
+      paymentApi.get(`/api/payments/config`),
     ])
-      .then(([paymentRes, adRes]) => {
+      .then(([paymentRes, adRes, configRes]) => {
         setPayment(paymentRes.data);
         setAd(adRes.data);
+        setRazorpayKey(configRes.data.key);
       })
       .catch(() => setError("Could not load order details for this ad."))
       .finally(() => setLoading(false));
@@ -39,7 +44,7 @@ export default function PaymentPage() {
       const order = orderRes.data;
 
       const options = {
-        key: RAZORPAY_KEY,
+        key: razorpayKey,
         amount: order.amount * 100,
         currency: "INR",
         name: "Adelevate",
@@ -66,6 +71,19 @@ export default function PaymentPage() {
       };
 
       const rzp = new window.Razorpay(options);
+
+      // ✅ FIX: without this, Razorpay just shows its own generic
+      // "Oops! Something went wrong" screen and we never learn why. This
+      // surfaces the real reason (declined card, invalid test instrument,
+      // amount/currency mismatch, etc.) on our own error banner instead.
+      rzp.on("payment.failed", (response) => {
+        console.error("Razorpay payment.failed:", response.error);
+        setError(
+          `Payment failed: ${response.error.description || response.error.reason || "Unknown error"}`
+        );
+        setPaying(false);
+      });
+
       rzp.open();
     } catch (err) {
       setError(err.response?.data?.error || "Could not start payment. Please try again.");
@@ -118,7 +136,7 @@ export default function PaymentPage() {
 
           <button
             onClick={handlePay}
-            disabled={paying || loading || !payment}
+            disabled={paying || loading || !payment || !razorpayKey}
             className="w-full rounded-[10px] bg-coral py-3.5 text-base font-black tracking-wide text-white disabled:opacity-60"
           >
             {paying ? "Opening checkout..." : payment ? `Pay ₹${payment.amount} Securely` : "Loading..."}

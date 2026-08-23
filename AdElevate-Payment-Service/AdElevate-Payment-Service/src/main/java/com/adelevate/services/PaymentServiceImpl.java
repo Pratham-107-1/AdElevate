@@ -54,7 +54,12 @@ public class PaymentServiceImpl implements PaymentService {
 
         try {
             JSONObject orderRequest = new JSONObject();
-            orderRequest.put("amount", payment.getAmount() * 100); // Razorpay expects paise
+            // ✅ FIX: Razorpay's Orders API requires "amount" to be a plain integer
+            // number of paise. payment.getAmount() is a Double, so
+            // "payment.getAmount() * 100" was putting a decimal (e.g. 499900.0)
+            // into the request, which Razorpay rejected with a RazorpayException
+            // on every single order — Math.round(...) makes it a long/int.
+            orderRequest.put("amount", Math.round(payment.getAmount() * 100));
             orderRequest.put("currency", "INR");
             orderRequest.put("receipt", "txn_" + dto.getAdId());
 
@@ -68,13 +73,26 @@ public class PaymentServiceImpl implements PaymentService {
                 System.out.println("✅ Razorpay Order Created: " + razorpayOrderId);
             } else {
                 payment.setStatus(PaymentStatus.FAILED);
+                paymentRepository.save(payment);
                 System.out.println("❌ Razorpay Order creation returned null");
+                // ✅ FIX: don't return a 200 with a broken/null order — the
+                // frontend would open Razorpay Checkout with a bad order_id
+                // and fail deep inside the checkout iframe instead of showing
+                // a clean error on our own payment page.
+                throw new RuntimeException("Could not create Razorpay order for ad " + dto.getAdId() + ".");
             }
         } catch (RazorpayException e) {
             e.printStackTrace();
             payment.setStatus(PaymentStatus.FAILED);
             payment.setOrderId("ERROR_" + dto.getAdId()); // marker for debugging
+            paymentRepository.save(payment);
             System.out.println("❌ Razorpay Exception: " + e.getMessage());
+            // ✅ FIX: propagate so GlobalExceptionHandler turns this into a
+            // clean 400 { "error": ... } that PaymentPage.jsx already knows
+            // how to display, instead of silently returning 200 OK with a
+            // fake "ERROR_<adId>" order_id that Razorpay Checkout would then
+            // fail on with the generic "Oops! Something went wrong" screen.
+            throw new RuntimeException("Could not initiate payment: " + e.getMessage());
         }
 
         paymentRepository.save(payment);

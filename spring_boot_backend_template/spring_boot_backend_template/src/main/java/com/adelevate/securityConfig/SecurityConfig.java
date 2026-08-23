@@ -17,9 +17,6 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
-    @org.springframework.beans.factory.annotation.Value("${frontend.origin}")
-    private String frontendOrigin;
-
     private final JwtAuthenticationFilter jwtFilter;
 
     public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
@@ -40,7 +37,7 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(frontendOrigin));
+        config.setAllowedOrigins(List.of("http://localhost:5173")); // Vite dev server
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

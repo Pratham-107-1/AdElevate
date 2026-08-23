@@ -17,7 +17,101 @@ const TABS = [
   { id: "analytics", icon: "📊", label: "Analytics" },
 ];
 
-function MyAdsTab({ ads, loading, onGoPost, onRefresh }) {
+function EditAdModal({ ad, onClose, onSaved }) {
+  const [form, setForm] = useState({
+    title: ad.title || "",
+    city: ad.city || "",
+    minPrice: ad.minPrice ?? "",
+    maxPrice: ad.maxPrice ?? "",
+    category: ad.category || "",
+    description: ad.description || "",
+    productImage: ad.productImage || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const { locations } = useLocations();
+
+  const update = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const save = async () => {
+    if (!form.title || !form.city || !form.category || !form.minPrice || !form.maxPrice) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await coreApi.put(`/api/ads/${ad.adId}`, {
+        title: form.title,
+        city: form.city,
+        category: form.category,
+        description: form.description,
+        productImage: form.productImage,
+        minPrice: Number(form.minPrice),
+        maxPrice: Number(form.maxPrice),
+        // vendorId, planId, and expirationDate deliberately omitted —
+        // those aren't editable here and the backend now leaves an
+        // omitted expirationDate untouched instead of nulling it out.
+      });
+      onSaved();
+    } catch (err) {
+      setError(err.response?.data?.error || "Could not update ad.");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div className="max-h-[90vh] w-full max-w-lg overflow-auto rounded-2xl bg-white p-7 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="font-heading text-lg font-bold text-navy">Edit Ad Details</h3>
+          <button onClick={onClose} className="text-xl leading-none text-slate-400">×</button>
+        </div>
+
+        <label className="mb-1.5 block text-[13px] font-semibold text-charcoal">Ad Title</label>
+        <input value={form.title} onChange={update("title")} className="mb-4 w-full rounded-[10px] border-[1.5px] border-slate-200 px-3.5 py-2.5 text-sm" />
+
+        <label className="mb-1.5 block text-[13px] font-semibold text-charcoal">Location (City)</label>
+        <select value={form.city} onChange={update("city")} className="mb-4 w-full rounded-[10px] border-[1.5px] border-slate-200 px-3.5 py-2.5 text-sm">
+          <option value="">Select a city</option>
+          {locations.map((loc) => <option key={loc.locationId} value={loc.city}>{loc.city}</option>)}
+        </select>
+
+        <label className="mb-1.5 block text-[13px] font-semibold text-charcoal">Price Range</label>
+        <div className="mb-4 flex gap-2">
+          <input value={form.minPrice} onChange={update("minPrice")} type="number" placeholder="Min ₹" className="w-full rounded-[10px] border-[1.5px] border-slate-200 px-3.5 py-2.5 text-sm" />
+          <input value={form.maxPrice} onChange={update("maxPrice")} type="number" placeholder="Max ₹" className="w-full rounded-[10px] border-[1.5px] border-slate-200 px-3.5 py-2.5 text-sm" />
+        </div>
+
+        <label className="mb-1.5 block text-[13px] font-semibold text-charcoal">Category</label>
+        <select value={form.category} onChange={update("category")} className="mb-4 w-full rounded-[10px] border-[1.5px] border-slate-200 px-3.5 py-2.5 text-sm">
+          <option value="">Select a category</option>
+          {ALL_CATEGORIES.map((c) => <option key={c} value={c}>{c.replaceAll("_", " ")}</option>)}
+        </select>
+
+        <label className="mb-1.5 block text-[13px] font-semibold text-charcoal">Description</label>
+        <textarea value={form.description} onChange={update("description")} rows={4}
+          className="mb-4 w-full rounded-[10px] border-[1.5px] border-slate-200 px-3.5 py-2.5 text-sm" />
+
+        <label className="mb-1.5 block text-[13px] font-semibold text-charcoal">Image</label>
+        <ProductImagePicker value={form.productImage} onChange={(url) => setForm((f) => ({ ...f, productImage: url }))} />
+
+        {error && <p className="mt-3 text-sm text-brand-red">{error}</p>}
+
+        <div className="mt-5.5 flex gap-3">
+          <button onClick={save} disabled={saving} className="rounded-[10px] bg-coral px-7 py-2.5 text-sm font-extrabold text-white disabled:opacity-60">
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+          <button onClick={onClose} disabled={saving} className="text-[13px] text-slate-500">Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MyAdsTab({ ads, loading, onGoPost, onRefresh, onPay }) {
+  const [editingAd, setEditingAd] = useState(null);
+
   const deleteAd = async (adId) => {
     if (!confirm("Delete this ad?")) return;
     try {
@@ -68,16 +162,41 @@ function MyAdsTab({ ads, loading, onGoPost, onRefresh }) {
                   </td>
                   <td className="px-4 py-3.5"><PlanBadge plan={ad.planType} /></td>
                   <td className="px-4 py-3.5">
-                    <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-bold text-green-600">{ad.status}</span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                      ad.status === "PENDING_PAYMENT" || ad.status === "PAYMENT_FAILED"
+                        ? "bg-amber-50 text-amber-600"
+                        : ad.status === "REJECTED"
+                        ? "bg-red-50 text-brand-red"
+                        : "bg-green-50 text-green-600"
+                    }`}>{ad.status}</span>
                   </td>
                   <td className="px-4 py-3.5">
-                    <button onClick={() => deleteAd(ad.adId)} className="rounded-md bg-red-100 px-2.5 py-1 text-xs font-bold text-brand-red">Delete</button>
+                    <div className="flex gap-2">
+                      {/* ✅ FIX: this was the only way an ad ever reached
+                          /payment?adId=X — right after posting, via
+                          PostAdTab's onPosted. If the vendor cancelled,
+                          closed the tab, or the payment failed, the ad was
+                          stuck at PENDING_PAYMENT / PAYMENT_FAILED forever
+                          with no way back to the payment page. */}
+                      {(ad.status === "PENDING_PAYMENT" || ad.status === "PAYMENT_FAILED") && (
+                        <button onClick={() => onPay(ad.adId)} className="rounded-md bg-coral px-2.5 py-1 text-xs font-bold text-white">Pay Now</button>
+                      )}
+                      <button onClick={() => setEditingAd(ad)} className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-navy">Edit</button>
+                      <button onClick={() => deleteAd(ad.adId)} className="rounded-md bg-red-100 px-2.5 py-1 text-xs font-bold text-brand-red">Delete</button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+      {editingAd && (
+        <EditAdModal
+          ad={editingAd}
+          onClose={() => setEditingAd(null)}
+          onSaved={() => { setEditingAd(null); onRefresh(); }}
+        />
       )}
     </div>
   );
@@ -368,7 +487,7 @@ export default function ProviderDashboard() {
       </div>
 
       <div className="mx-auto max-w-7xl px-5 py-7">
-        {tab === "myads" && <MyAdsTab ads={ads} loading={loading} onGoPost={() => setTab("postad")} onRefresh={loadAds} />}
+        {tab === "myads" && <MyAdsTab ads={ads} loading={loading} onGoPost={() => setTab("postad")} onRefresh={loadAds} onPay={(adId) => navigate(`/payment?adId=${adId}`)} />}
         {tab === "postad" && <PostAdTab vendorId={userId} onPosted={(adId) => navigate(`/payment?adId=${adId}`)} />}
         {tab === "plans" && (
           <div>

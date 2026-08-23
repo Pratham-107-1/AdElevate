@@ -22,6 +22,8 @@ public class AdResponseDto {
     private Double averageRating;     // 4.8
     private Integer totalReviews;     // 128
     private String priceRange;        // ₹999–₹4,999 or ₹299/visit
+    private Double minPrice;          // ✅ raw values, so the edit form doesn't
+    private Double maxPrice;          //    have to parse them back out of priceRange
     private String status; // from AdStatus enum
 
 }
