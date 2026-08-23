@@ -37,6 +37,6 @@ Thumbs.db
 
 # Logs
 *.log
-
+# Local secrets - do not commit real credentials here
 spring_boot_backend_template/spring_boot_backend_template/src/main/resources/application.properties
 AdElevate-Payment-Service/AdElevate-Payment-Service/src/main/resources/application.properties
