@@ -17,7 +17,7 @@ public class PaymentClient {
     public PaymentResponseDto initiatePayment(PaymentRequestDto dto) {
         return webClientBuilder.build()
                 .post()
-                .uri("http://localhost:8081/api/payments") // ✅ Payment microservice ka URL
+                .uri("http://localhost:8081/api/payments") // Payment microservice ka URL
                 .bodyValue(dto)
                 .retrieve()
                 .bodyToMono(PaymentResponseDto.class)
