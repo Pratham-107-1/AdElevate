@@ -36,14 +36,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = null;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            // ✅ Trim to remove accidental spaces
+           
             token = authHeader.substring(7).trim();
             username = jwtUtil.extractUsername(token);
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(token)) {
-                // ✅ Extract roles safely
+                
                 List<String> roles = jwtUtil.extractRoles(token);
 
                 List<GrantedAuthority> authorities = roles.stream()
